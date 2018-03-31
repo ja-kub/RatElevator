@@ -9,7 +9,7 @@
 #define POT_PIN 0
 
 const int TIME_TO_LEAVE_CAR_IN_SECONDS = 10;
-const int MOVING_CAR_TIMEOUT_IN_SECONDS = 20;
+const int MOVING_CAR_TIMEOUT_IN_SECONDS = 30;
 const int INERTIA_TIME_IN_MILISECONDS = 50;
 enum direction {up, down};
 int speed = 0;
@@ -54,7 +54,7 @@ void checkGoUp() {
 void go(direction dir) {
     int brake;
     int timeLeftInMs = MOVING_CAR_TIMEOUT_IN_SECONDS * 1000;
-    int periodInMs = 1000;
+    int periodInMs = 100;
 
     digitalWrite(LED_BUILTIN, HIGH); // swith LED on
     if (dir == down) {
@@ -67,27 +67,39 @@ void go(direction dir) {
       Serial.print("Elevator is going UP with speed: ");
     }
     Serial.println(speed);
-    Serial.print("Emergency timeout in seconds: ");
-    Serial.println(MOVING_CAR_TIMEOUT_IN_SECONDS);
 
+    Serial.print("Seconds left to emergency timeout: ");
     while (digitalRead(brake) != LOW // until brake is not touched 
     && timeLeftInMs > 0) { // and timeout didn't occur
-      delay(periodInMs); // continue motor work and wait
+      if (timeLeftInMs%1000==0) { // display time only at full second
+        Serial.print(timeLeftInMs/1000);
+        Serial.print(", ");
+      }
+      delay(periodInMs); //  wait
       timeLeftInMs = timeLeftInMs - periodInMs; 
-      Serial.print("Seconds left: ");
-      Serial.println(timeLeftInMs/1000);
     }
+    Serial.println("0.");
 
     if (digitalRead(brake) == LOW) { // when brake is touched
       delay(INERTIA_TIME_IN_MILISECONDS); // delay after brake touch to finish motor work
     }
     setMotor(0, 0); // stop motor
     
+    timeLeftInMs = TIME_TO_LEAVE_CAR_IN_SECONDS * 1000;
+    periodInMs = 1000;
     Serial.print("Seconds to leave the elevator: ");
-    Serial.println(TIME_TO_LEAVE_CAR_IN_SECONDS);
-    delay(TIME_TO_LEAVE_CAR_IN_SECONDS * 1000);
+    while (timeLeftInMs > 0) { // while timeout didn't occur
+      if (timeLeftInMs%1000==0) { // display time only at full second
+        Serial.print(timeLeftInMs/1000);
+        Serial.print(", ");
+      }
+      delay(periodInMs); //  wait
+      timeLeftInMs = timeLeftInMs - periodInMs; 
+    }
+    Serial.println("0.");
+
     Serial.println("Elevator ready to go.");
-    digitalWrite(LED_BUILTIN, LOW); // switch LED off
+    digitalWrite(LED_BUILTIN, LOW); // switch LED off 
 }
 
 void setMotor(int speed, boolean reverse) {
